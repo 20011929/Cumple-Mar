@@ -240,26 +240,27 @@
     .addr-text {
       font-family: 'Playfair Display', serif;
       font-style: italic;
-      font-size: clamp(0.78rem, 2.2vw, 1rem);
-      color: rgba(60, 20, 20, 0.7);
-      letter-spacing: 0.04em;
+      font-size: clamp(1rem, 3.5vw, 1.4rem);
+      color: rgba(50, 10, 10, 0.75);
+      letter-spacing: 0.03em;
       text-align: center;
+      line-height: 1.4;
     }
 
     .addr-btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       background: var(--bordo);
       color: #fff;
       font-family: 'Inter', sans-serif;
-      font-size: 0.72rem;
+      font-size: clamp(0.82rem, 2.8vw, 1rem);
       font-weight: 600;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       text-decoration: none;
-      padding: 0.75rem 1.8rem;
-      min-height: 46px;
+      padding: 1rem 2.2rem;
+      min-height: 54px;
       white-space: nowrap;
       -webkit-tap-highlight-color: transparent;
       transition: opacity 0.25s ease;
@@ -272,12 +273,11 @@
        Sección limpia sin foto: fondo bordo sólido
     ══════════════════════════════════════════ */
     #s5 {
-      background: var(--bordo);
+      background: var(--bordo-dark);
       flex-direction: column;
       gap: clamp(1.5rem, 5vw, 2.5rem);
       padding: 2rem;
     }
-    #s5 .bg-blur { display: none; }   /* no necesita blur: fondo sólido */
 
     .rsvp-title {
       font-family: 'Playfair Display', serif;
@@ -411,25 +411,54 @@
       gap: 8px;
     }
     .admin-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
       font-family: 'Playfair Display', serif;
       font-size: 1.1rem;
       color: rgba(255,255,255,0.88);
-      padding: 0.5rem 0;
+      padding: 0.6rem 0;
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
-    .admin-list li::before {
+    .admin-list li .name-text::before {
       content: '✓  ';
-      color: rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.3);
       font-family: 'Inter', sans-serif;
       font-size: 0.75rem;
     }
-    .admin-count {
+    .admin-del {
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.4);
       font-family: 'Inter', sans-serif;
-      font-size: 0.68rem;
-      color: rgba(255,255,255,0.3);
-      letter-spacing: 0.12em;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.6rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .admin-del:hover,
+    .admin-del:active { border-color: rgba(255,100,100,0.6); color: rgba(255,120,120,0.9); }
+
+    .admin-count {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 2.2rem;
+      color: #fff;
+      align-self: flex-start;
+      line-height: 1;
+    }
+    .admin-count-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.15em;
       text-transform: uppercase;
       align-self: flex-start;
+      margin-top: -6px;
+      margin-bottom: 8px;
     }
     .admin-empty {
       font-family: 'Playfair Display', serif;
@@ -527,6 +556,7 @@
        Sección propia sin foto
   ══════════════════════════════════════════ -->
   <section class="section" id="s5">
+    <img class="bg-blur" src="page_5.png" aria-hidden="true">
     <!--
       Tocá el título "¿Venís?" 5 veces seguidas para ver la lista de confirmados.
     -->
@@ -560,6 +590,7 @@
       <button class="admin-close" id="adminClose">Cerrar</button>
     </div>
     <p class="admin-count" id="adminCount"></p>
+    <p class="admin-count-label" id="adminCountLabel"></p>
     <ul class="admin-list" id="adminList"></ul>
     <p class="admin-empty" id="adminEmpty" style="display:none">Todavía no hay confirmaciones.</p>
   </div>
@@ -736,10 +767,11 @@
      PANEL ADMIN — se activa tocando el título 5 veces
      Muestra todos los nombres guardados en localStorage
   ══════════════════════════════════════════ */
-  const adminPanel = document.getElementById('adminPanel');
-  const adminList  = document.getElementById('adminList');
-  const adminCount = document.getElementById('adminCount');
-  const adminEmpty = document.getElementById('adminEmpty');
+  const adminPanel      = document.getElementById('adminPanel');
+  const adminList       = document.getElementById('adminList');
+  const adminCount      = document.getElementById('adminCount');
+  const adminCountLabel = document.getElementById('adminCountLabel');
+  const adminEmpty      = document.getElementById('adminEmpty');
 
   let tapCount = 0, tapTimer = null;
 
@@ -747,32 +779,52 @@
     tapCount++;
     clearTimeout(tapTimer);
     tapTimer = setTimeout(() => { tapCount = 0; }, 1400);
-    if (tapCount >= 5) {
-      tapCount = 0;
-      openAdmin();
-    }
+    if (tapCount >= 5) { tapCount = 0; openAdmin(); }
   });
 
   document.getElementById('adminClose').addEventListener('click', () => {
     adminPanel.classList.remove('open');
   });
 
-  function openAdmin() {
+  function renderAdmin() {
     const names = JSON.parse(localStorage.getItem(RSVP_KEY) || '[]');
     adminList.innerHTML = '';
 
     if (names.length === 0) {
-      adminEmpty.style.display = 'block';
-      adminCount.textContent   = 'Sin confirmaciones aún';
+      adminEmpty.style.display  = 'block';
+      adminCount.textContent    = '0';
+      adminCountLabel.textContent = 'confirmados';
     } else {
-      adminEmpty.style.display = 'none';
-      adminCount.textContent   = `${names.length} confirmado${names.length !== 1 ? 's' : ''}`;
-      names.forEach(n => {
-        const li = document.createElement('li');
-        li.textContent = n;
+      adminEmpty.style.display  = 'none';
+      adminCount.textContent    = names.length;
+      adminCountLabel.textContent = `confirmado${names.length !== 1 ? 's' : ''}`;
+
+      names.forEach((name, idx) => {
+        const li  = document.createElement('li');
+
+        const txt = document.createElement('span');
+        txt.className   = 'name-text';
+        txt.textContent = name;
+
+        const btn = document.createElement('button');
+        btn.className   = 'admin-del';
+        btn.textContent = 'Borrar';
+        btn.addEventListener('click', () => {
+          const updated = JSON.parse(localStorage.getItem(RSVP_KEY) || '[]');
+          updated.splice(idx, 1);
+          localStorage.setItem(RSVP_KEY, JSON.stringify(updated));
+          renderAdmin();   // re-dibuja la lista
+        });
+
+        li.appendChild(txt);
+        li.appendChild(btn);
         adminList.appendChild(li);
       });
     }
+  }
+
+  function openAdmin() {
+    renderAdmin();
     adminPanel.classList.add('open');
   }
 </script>
