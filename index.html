@@ -692,14 +692,11 @@
   /* ══════════════════════════════════════════
      S5 — RSVP
      ─────────────────────────────────────────
-     SETUP (1 min):
-       1. Entrá a https://web3forms.com
-       2. Poné tu email y hacé clic en "Get your Access Key"
-       3. Copiá la key y pegala abajo en WEB3FORMS_KEY
-     Así cada confirmación llega a tu email automáticamente.
+     Cada confirmación se guarda en Google Sheets:
+     https://docs.google.com/spreadsheets/d/1EUOt8UPkwKSHi9x8eOzr0jkCLl_lrJ-E7GFnTTZMT70
   ══════════════════════════════════════════ */
-  const WEB3FORMS_KEY = 'TU_ACCESS_KEY_AQUI';   // ← reemplazá con tu key
-  const RSVP_KEY      = 'rsvp_martina_2026';
+  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwmIuW1LJPN-eZT8Mo2VucxQaFU1JdhYhehsrfcX09_ewHWIBeKfVUrihhMxdJ7CT_S/exec';
+  const RSVP_KEY   = 'rsvp_martina_2026';
 
   const rsvpInput = document.getElementById('rsvpName');
   const rsvpBtn   = document.getElementById('rsvpBtn');
@@ -719,36 +716,22 @@
       return;
     }
 
-    // Deshabilitar botón mientras procesa
-    rsvpBtn.disabled  = true;
-    rsvpBtn.textContent = '…';
+    rsvpBtn.disabled     = true;
+    rsvpBtn.textContent  = '…';
 
-    // 1. Guardar en localStorage (respaldo local)
-    const list = JSON.parse(localStorage.getItem(RSVP_KEY) || '[]');
-    if (!list.includes(name)) {
-      list.push(name);
-      localStorage.setItem(RSVP_KEY, JSON.stringify(list));
-    }
+    // Guardar en Google Sheets
+    try {
+      await fetch(SHEETS_URL, {
+        method:  'POST',
+        mode:    'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name })
+      });
+    } catch (_) {}
 
-    // 2. Enviar a Web3Forms → te llega un email con el nombre
-    if (WEB3FORMS_KEY !== 'TU_ACCESS_KEY_AQUI') {
-      try {
-        await fetch('https://api.web3forms.com/submit', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            access_key: WEB3FORMS_KEY,
-            subject:    '🥂 Nueva confirmación — Cumpleaños Martina',
-            name:       name,
-            message:    `${name} confirmó asistencia al cumpleaños de Martina el 30 de mayo.`
-          })
-        });
-      } catch (_) { /* falla silenciosamente: el nombre ya quedó en localStorage */ }
-    }
-
-    // 3. Mostrar mensaje de éxito
-    rsvpForm.style.transition = 'opacity 0.45s ease';
-    rsvpForm.style.opacity    = '0';
+    // Mostrar mensaje de éxito
+    rsvpForm.style.transition   = 'opacity 0.45s ease';
+    rsvpForm.style.opacity      = '0';
     rsvpForm.style.pointerEvents = 'none';
 
     rsvpMsg.textContent = `¡Nos vemos, ${name}! 🥂`;
