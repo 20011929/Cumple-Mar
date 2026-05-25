@@ -358,12 +358,16 @@
       color: #fff;
       text-align: center;
       width: 88%;
-      display: none;
       opacity: 0;
-      transition: opacity 0.8s ease;
+      pointer-events: none;
+      transition: opacity 0.7s ease;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
     }
-    .rsvp-msg.show    { display: block; }
-    .rsvp-msg.fade-in { opacity: 1; }
+    .rsvp-msg.visible { opacity: 1; pointer-events: auto; }
 
     /* Panel admin oculto — visible solo con gesto secreto */
     .admin-panel {
@@ -746,17 +750,15 @@
     }
 
     // 3. Mostrar mensaje de éxito
-    rsvpForm.style.transition = 'opacity 0.5s ease';
+    rsvpForm.style.transition = 'opacity 0.45s ease';
     rsvpForm.style.opacity    = '0';
+    rsvpForm.style.pointerEvents = 'none';
+
+    rsvpMsg.textContent = `¡Nos vemos, ${name}! 🥂`;
 
     setTimeout(() => {
-      rsvpForm.style.display = 'none';
-      rsvpMsg.textContent    = `¡Nos vemos, ${name}! 🥂`;
-      rsvpMsg.classList.add('show');
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => rsvpMsg.classList.add('fade-in'))
-      );
-    }, 520);
+      rsvpMsg.classList.add('visible');
+    }, 480);
   }
 
   rsvpBtn.addEventListener('click', confirmRSVP);
