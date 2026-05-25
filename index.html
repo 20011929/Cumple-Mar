@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Cumpleaños Martina — 30 de Mayo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bordo:      #4E0000;
+      --bordo-dark: #3b0314;
+      --cream:      #f0ece4;
+    }
+
+    html, body { height: 100%; background: var(--bordo-dark); }
+
+    /* ══ SCROLL CONTAINER ══ */
+    #sc {
+      height: 100svh;
+      overflow-y: hidden;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+    #sc.unlocked { overflow-y: scroll; }
+
+    /* ══ SECTION BASE ══ */
+    .section {
+      height: 100svh;
+      scroll-snap-align: start;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: var(--bordo-dark);
+    }
+
+    /*
+      FONDO BORROSO: la misma foto escalada y desenfocada llena 100% de la sección.
+      Esto hace que el "relleno" alrededor de la foto nítida siempre tenga
+      exactamente los colores de esa imagen — sin seams, sin adivinar hex codes.
+    */
+    .bg-blur {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.08);   /* oculta bordes del blur */
+      filter: blur(20px) brightness(0.65) saturate(1.1);
+      z-index: 0;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /*
+      IMG-BOX: contenedor con el aspect-ratio exacto de las fotos (910×1016).
+      El ancho se limita a lo que cabe en el viewport manteniendo ese ratio,
+      así la foto siempre se ve COMPLETA sin cropping.
+      Los overlays se posicionan como % de este contenedor → siempre alineados.
+    */
+    .img-box {
+      position: relative;
+      z-index: 1;
+      width: min(100%, calc(100svh * 910 / 1016));
+      aspect-ratio: 910 / 1016;
+      flex-shrink: 0;
+    }
+    .img-box > .photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+
+    /* ══════════════════════════════════════════
+       S1 — SOBRE CON SELLO DE LACRE
+    ══════════════════════════════════════════ */
+    .env-img {
+      transform-origin: center 68%;
+      transition: transform 0.88s ease-in-out, opacity 0.88s ease-in-out;
+    }
+
+    /* Tarjeta que emerge: ocupa la zona del cuerpo del sobre (bajo la solapa) */
+    .env-card {
+      position: absolute;
+      top: 38%; left: 9%; right: 9%; bottom: 3%;
+      background: #f5f0e8;
+      border-radius: 2px;
+      z-index: 2;
+      transform: translateY(10px);
+      opacity: 0;
+      transition: transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.12s,
+                  opacity   0.65s ease 0.12s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .env-card-rule { width: 36%; height: 1px; background: var(--bordo); opacity: 0.28; }
+    .env-card-name {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+      color: var(--bordo);
+      letter-spacing: 0.05em;
+    }
+
+    #s1.opening .env-img  { transform: perspective(650px) rotateX(-50deg) scale(0.93); opacity: 0.06; }
+    #s1.opening .env-card { transform: translateY(-48%); opacity: 1; }
+    #s1.opening .hint     { opacity: 0; pointer-events: none; }
+
+    /* Scroll hint */
+    .hint {
+      position: absolute;
+      bottom: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      color: rgba(255,255,255,0.45);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .hint-line {
+      width: 1px;
+      height: 26px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.45));
+      animation: linePulse 1.9s ease-in-out infinite;
+    }
+    @keyframes linePulse {
+      0%,100% { opacity: 0.28; transform: scaleY(0.8); }
+      50%      { opacity: 0.75; transform: scaleY(1.1); }
+    }
+
+
+    /* ══════════════════════════════════════════
+       S2 — INVITACIÓN PRINCIPAL
+       La foto ES el contenido: fade-in de entrada
+    ══════════════════════════════════════════ */
+    #s2 .img-box > .photo {
+      opacity: 0;
+      transform: scale(1.03);
+      transition: opacity 1.1s ease, transform 1.1s ease;
+    }
+    #s2.in-view .img-box > .photo { opacity: 1; transform: scale(1); }
+
+
+    /* ══════════════════════════════════════════
+       S3 — CUENTA REGRESIVA
+       "Faltan:" ocupa y≈9–25% de la foto.
+       Número HTML en y≈30%, zona vacía inferior.
+    ══════════════════════════════════════════ */
+    .cd-overlay {
+      position: absolute;
+      top: 29%;
+      left: 0; right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .cd-number {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      /* Grande pero que no solape "días" — máximo ~28% de la altura del contenedor */
+      font-size: clamp(6rem, 26vw, 13rem);
+      line-height: 1;
+      color: #fff;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.55s ease 0.1s, transform 0.55s ease 0.1s;
+    }
+    .cd-unit {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      /* "días" claramente separado del número */
+      font-size: clamp(0.85rem, 3vw, 1.4rem);
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 0.7s ease 0.38s;
+    }
+    .cd-success {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(1.3rem, 5vw, 2.2rem);
+      color: rgba(255,255,255,0.88);
+      text-align: center;
+      padding: 0 1rem;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.7s ease 0.1s;
+    }
+    #s3.in-view .cd-number  { opacity: 1; transform: translateY(0); }
+    #s3.in-view .cd-unit    { opacity: 1; }
+    #s3.in-view .cd-success { opacity: 1; }
+
+
+    /* ══════════════════════════════════════════
+       S4 — DIRECCIÓN
+       "Dirección" en foto: y≈5–20%
+       Chip Pantone en foto: y≈65–88%
+       Solo un botón centrado en la zona libre (y≈35–55%)
+    ══════════════════════════════════════════ */
+    .addr-btn-wrap {
+      position: absolute;
+      /* Centro de la zona libre entre "Dirección" y Pantone */
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      transition: opacity 0.8s ease 0.2s;
+    }
+    #s4.in-view .addr-btn-wrap { opacity: 1; }
+
+    .addr-text {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(0.78rem, 2.2vw, 1rem);
+      color: rgba(60, 20, 20, 0.7);
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+
+    .addr-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bordo);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 0.75rem 1.8rem;
+      min-height: 46px;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.25s ease;
+    }
+    .addr-btn:active { opacity: 0.75; }
+
+
+    /* ══════════════════════════════════════════
+       S5 — FORMULARIO DE ASISTENCIA
+       Sección limpia sin foto: fondo bordo sólido
+    ══════════════════════════════════════════ */
+    #s5 {
+      background: var(--bordo);
+      flex-direction: column;
+      gap: clamp(1.5rem, 5vw, 2.5rem);
+      padding: 2rem;
+    }
+    #s5 .bg-blur { display: none; }   /* no necesita blur: fondo sólido */
+
+    .rsvp-title {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-weight: 700;
+      font-size: clamp(2.4rem, 11vw, 5rem);
+      color: #fff;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    #s5.in-view .rsvp-title { opacity: 1; transform: translateY(0); }
+
+    .rsvp-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.6rem;
+      width: min(360px, 90vw);
+      opacity: 0;
+      transition: opacity 0.7s ease 0.25s;
+    }
+    #s5.in-view .rsvp-form { opacity: 1; }
+
+    /* font-size ≥16px → evita zoom automático en iOS */
+    .rsvp-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.45);
+      padding: 0.7rem 0;
+      color: #fff;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 16px;
+      text-align: center;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      transition: border-color 0.3s ease;
+    }
+    .rsvp-input::placeholder { color: rgba(255,255,255,0.32); }
+    .rsvp-input:focus         { border-color: rgba(255,255,255,0.85); }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      14%     { transform: translateX(-8px); }
+      28%     { transform: translateX(8px); }
+      50%     { transform: translateX(-5px); }
+      64%     { transform: translateX(5px); }
+      82%     { transform: translateX(-2px); }
+    }
+    .rsvp-input.shaking { animation: shake 0.48s ease; }
+
+    .rsvp-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.7);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      font-size: 0.74rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      min-height: 48px;
+      padding: 0 2rem;
+      width: 100%;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.28s ease, color 0.28s ease;
+    }
+    .rsvp-btn:hover,
+    .rsvp-btn:active { background: rgba(255,255,255,0.92); color: var(--bordo); }
+
+    .rsvp-msg {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(1.3rem, 5.5vw, 2rem);
+      color: #fff;
+      text-align: center;
+      width: 88%;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    .rsvp-msg.show    { display: block; }
+    .rsvp-msg.fade-in { opacity: 1; }
+
+    /* Panel admin oculto — visible solo con gesto secreto */
+    .admin-panel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.92);
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2.5rem 1.5rem;
+      gap: 1rem;
+      overflow-y: auto;
+    }
+    .admin-panel.open { display: flex; }
+
+    .admin-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .admin-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.3rem;
+      color: #fff;
+    }
+    .admin-close {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.4);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      padding: 0.4rem 0.9rem;
+      cursor: pointer;
+    }
+    .admin-list {
+      width: 100%;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .admin-list li {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.88);
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .admin-list li::before {
+      content: '✓  ';
+      color: rgba(255,255,255,0.35);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+    }
+    .admin-count {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      align-self: flex-start;
+    }
+    .admin-empty {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      color: rgba(255,255,255,0.35);
+      font-size: 1rem;
+      margin-top: 2rem;
+    }
+
+
+    /* ══════════════════════════════════════════
+       S6 — MARTINA. (foto final)
+    ══════════════════════════════════════════ */
+    #s6 .img-box > .photo {
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+    #s6.in-view .img-box > .photo { opacity: 1; }
+  </style>
+</head>
+
+<body>
+<div id="sc">
+
+  <!-- ══════════════════════════════════════════
+       S1 — SOBRE CON SELLO DE LACRE
+  ══════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <img class="bg-blur" src="page_1.png" aria-hidden="true">
+    <div class="img-box">
+      <img class="photo env-img" src="page_1.png" alt="Sobre con sello de lacre" draggable="false">
+      <div class="env-card">
+        <div class="env-card-rule"></div>
+        <span class="env-card-name">Martina</span>
+        <div class="env-card-rule"></div>
+      </div>
+    </div>
+    <div class="hint" aria-hidden="true">
+      <span>deslizá para abrir</span>
+      <div class="hint-line"></div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       S2 — INVITACIÓN PRINCIPAL
+  ══════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <img class="bg-blur" src="page_2.png" aria-hidden="true">
+    <div class="img-box">
+      <img class="photo" src="page_2.png" alt="Invitación de cumpleaños">
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       S3 — CUENTA REGRESIVA
+  ══════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <img class="bg-blur" src="page_3.png" aria-hidden="true">
+    <div class="img-box">
+      <img class="photo" src="page_3.png" alt="Cuenta regresiva">
+      <div class="cd-overlay">
+        <div class="cd-number"  id="cdNum">0</div>
+        <p   class="cd-unit"   id="cdUnit">días</p>
+        <p   class="cd-success" id="cdSuccess">¡Fue un éxito!</p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       S4 — DIRECCIÓN
+       Solo botón: sin mapa iframe
+  ══════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <img class="bg-blur" src="page_4.png" aria-hidden="true">
+    <div class="img-box">
+      <img class="photo" src="page_4.png" alt="Dirección del evento">
+      <div class="addr-btn-wrap">
+        <p class="addr-text">El Palenque 1671, Roldán, Santa Fe</p>
+        <a
+          href="https://maps.google.com/maps?q=El+Palenque+1671%2C+Rold%C3%A1n%2C+Santa+Fe%2C+Argentina"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="addr-btn"
+        >↗ Abrir en Google Maps</a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       S5 — FORMULARIO DE ASISTENCIA
+       Sección propia sin foto
+  ══════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <!--
+      Tocá el título "¿Venís?" 5 veces seguidas para ver la lista de confirmados.
+    -->
+    <h2 class="rsvp-title" id="rsvpTitle">¿Venís?</h2>
+
+    <div class="rsvp-form" id="rsvpForm">
+      <input
+        type="text"
+        class="rsvp-input"
+        id="rsvpName"
+        placeholder="Tu nombre"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="words"
+        maxlength="60"
+        aria-label="Tu nombre"
+        enterkeyhint="done"
+      />
+      <button class="rsvp-btn" id="rsvpBtn" type="button">
+        Confirmar asistencia
+      </button>
+    </div>
+
+    <p class="rsvp-msg" id="rsvpMsg" aria-live="polite"></p>
+  </section>
+
+  <!-- Panel admin (oculto, se activa con 5 taps en el título) -->
+  <div class="admin-panel" id="adminPanel" role="dialog" aria-label="Lista de confirmados">
+    <div class="admin-header">
+      <h3>Confirmados</h3>
+      <button class="admin-close" id="adminClose">Cerrar</button>
+    </div>
+    <p class="admin-count" id="adminCount"></p>
+    <ul class="admin-list" id="adminList"></ul>
+    <p class="admin-empty" id="adminEmpty" style="display:none">Todavía no hay confirmaciones.</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       S6 — MARTINA. (cierre)
+  ══════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <img class="bg-blur" src="page_5.png" aria-hidden="true">
+    <div class="img-box">
+      <img class="photo" src="page_5.png" alt="martina.">
+    </div>
+  </section>
+
+</div><!-- /sc -->
+
+
+<script>
+  /* ══════════════════════════════════════════
+     S1 — ENVELOPE: bloquea scroll hasta la animación
+  ══════════════════════════════════════════ */
+  const sc     = document.getElementById('sc');
+  const s1     = document.getElementById('s1');
+  let   opened = false;
+
+  function openEnvelope() {
+    if (opened) return;
+    opened = true;
+    s1.classList.add('opening');
+    setTimeout(() => {
+      sc.classList.add('unlocked');
+      sc.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+    }, 940);
+  }
+
+  sc.addEventListener('wheel', (e) => {
+    if (opened) return;
+    if (sc.scrollTop < 8 && e.deltaY > 0) { e.preventDefault(); openEnvelope(); }
+  }, { passive: false });
+
+  let ty = 0;
+  sc.addEventListener('touchstart', (e) => { ty = e.touches[0].clientY; }, { passive: true });
+  sc.addEventListener('touchmove', (e) => {
+    if (opened) return;
+    if (sc.scrollTop < 8 && (ty - e.touches[0].clientY) > 36) {
+      e.preventDefault(); openEnvelope();
+    }
+  }, { passive: false });
+
+
+  /* ══════════════════════════════════════════
+     INTERSECTION OBSERVER — animaciones de entrada
+     (no se repiten: unobserve tras dispararse)
+  ══════════════════════════════════════════ */
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(({ target, isIntersecting }) => {
+      if (!isIntersecting) return;
+      target.classList.add('in-view');
+      if (target.id === 's3') runCountdown();
+      io.unobserve(target);
+    });
+  }, { threshold: 0.3 });
+
+  ['s2','s3','s4','s5','s6'].forEach(id => io.observe(document.getElementById(id)));
+
+
+  /* ══════════════════════════════════════════
+     S3 — COUNTDOWN: animación de 0 al valor real
+  ══════════════════════════════════════════ */
+  const birthday = new Date('2026-05-30T00:00:00');
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const daysLeft = Math.ceil((birthday - today) / 86400000);
+
+  const cdNum     = document.getElementById('cdNum');
+  const cdUnit    = document.getElementById('cdUnit');
+  const cdSuccess = document.getElementById('cdSuccess');
+
+  if (daysLeft <= 0) {
+    cdNum.style.display     = 'none';
+    cdUnit.style.display    = 'none';
+    cdSuccess.style.display = 'block';
+  }
+
+  let countDone = false;
+  function runCountdown() {
+    if (countDone || daysLeft <= 0) return;
+    countDone = true;
+    const t0 = performance.now();
+    (function tick(now) {
+      const p = Math.min((now - t0) / 1500, 1);
+      cdNum.textContent = Math.round((1 - (1-p)**3) * daysLeft);
+      if (p < 1) requestAnimationFrame(tick);
+    })(t0);
+  }
+
+
+  /* ══════════════════════════════════════════
+     S5 — RSVP
+     ─────────────────────────────────────────
+     SETUP (1 min):
+       1. Entrá a https://web3forms.com
+       2. Poné tu email y hacé clic en "Get your Access Key"
+       3. Copiá la key y pegala abajo en WEB3FORMS_KEY
+     Así cada confirmación llega a tu email automáticamente.
+  ══════════════════════════════════════════ */
+  const WEB3FORMS_KEY = 'TU_ACCESS_KEY_AQUI';   // ← reemplazá con tu key
+  const RSVP_KEY      = 'rsvp_martina_2026';
+
+  const rsvpInput = document.getElementById('rsvpName');
+  const rsvpBtn   = document.getElementById('rsvpBtn');
+  const rsvpForm  = document.getElementById('rsvpForm');
+  const rsvpMsg   = document.getElementById('rsvpMsg');
+
+  async function confirmRSVP() {
+    const name = rsvpInput.value.trim();
+
+    if (!name) {
+      rsvpInput.classList.remove('shaking');
+      void rsvpInput.offsetWidth;
+      rsvpInput.classList.add('shaking');
+      rsvpInput.addEventListener('animationend',
+        () => rsvpInput.classList.remove('shaking'), { once: true }
+      );
+      return;
+    }
+
+    // Deshabilitar botón mientras procesa
+    rsvpBtn.disabled  = true;
+    rsvpBtn.textContent = '…';
+
+    // 1. Guardar en localStorage (respaldo local)
+    const list = JSON.parse(localStorage.getItem(RSVP_KEY) || '[]');
+    if (!list.includes(name)) {
+      list.push(name);
+      localStorage.setItem(RSVP_KEY, JSON.stringify(list));
+    }
+
+    // 2. Enviar a Web3Forms → te llega un email con el nombre
+    if (WEB3FORMS_KEY !== 'TU_ACCESS_KEY_AQUI') {
+      try {
+        await fetch('https://api.web3forms.com/submit', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            access_key: WEB3FORMS_KEY,
+            subject:    '🥂 Nueva confirmación — Cumpleaños Martina',
+            name:       name,
+            message:    `${name} confirmó asistencia al cumpleaños de Martina el 30 de mayo.`
+          })
+        });
+      } catch (_) { /* falla silenciosamente: el nombre ya quedó en localStorage */ }
+    }
+
+    // 3. Mostrar mensaje de éxito
+    rsvpForm.style.transition = 'opacity 0.5s ease';
+    rsvpForm.style.opacity    = '0';
+
+    setTimeout(() => {
+      rsvpForm.style.display = 'none';
+      rsvpMsg.textContent    = `¡Nos vemos, ${name}! 🥂`;
+      rsvpMsg.classList.add('show');
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => rsvpMsg.classList.add('fade-in'))
+      );
+    }, 520);
+  }
+
+  rsvpBtn.addEventListener('click', confirmRSVP);
+  rsvpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmRSVP(); });
+
+
+  /* ══════════════════════════════════════════
+     PANEL ADMIN — se activa tocando el título 5 veces
+     Muestra todos los nombres guardados en localStorage
+  ══════════════════════════════════════════ */
+  const adminPanel = document.getElementById('adminPanel');
+  const adminList  = document.getElementById('adminList');
+  const adminCount = document.getElementById('adminCount');
+  const adminEmpty = document.getElementById('adminEmpty');
+
+  let tapCount = 0, tapTimer = null;
+
+  document.getElementById('rsvpTitle').addEventListener('click', () => {
+    tapCount++;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(() => { tapCount = 0; }, 1400);
+    if (tapCount >= 5) {
+      tapCount = 0;
+      openAdmin();
+    }
+  });
+
+  document.getElementById('adminClose').addEventListener('click', () => {
+    adminPanel.classList.remove('open');
+  });
+
+  function openAdmin() {
+    const names = JSON.parse(localStorage.getItem(RSVP_KEY) || '[]');
+    adminList.innerHTML = '';
+
+    if (names.length === 0) {
+      adminEmpty.style.display = 'block';
+      adminCount.textContent   = 'Sin confirmaciones aún';
+    } else {
+      adminEmpty.style.display = 'none';
+      adminCount.textContent   = `${names.length} confirmado${names.length !== 1 ? 's' : ''}`;
+      names.forEach(n => {
+        const li = document.createElement('li');
+        li.textContent = n;
+        adminList.appendChild(li);
+      });
+    }
+    adminPanel.classList.add('open');
+  }
+</script>
+</body>
+</html>
